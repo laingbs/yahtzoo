@@ -1,2 +1,3 @@
 # yahtzoo
-Fun CLI yahtzee game
+Fun CLI yahtzee game! :)
+
