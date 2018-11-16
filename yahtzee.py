@@ -1,6 +1,7 @@
 from random import randint
 import time
 import json
+import collections
 
 def roll_a_dice():
 
@@ -51,7 +52,7 @@ class Turn(object):
         #Ask which numbers to re-roll
         def additional_throw():
             dices_to_re_roll = raw_input("Which dice do you want to re-roll? ")
-
+            
             time.sleep(1.0)
 
             numbers_to_re_roll = map(int, dices_to_re_roll.split()) 
@@ -99,7 +100,7 @@ class Scorecard(object):
 
     def __init__(self):
 
-        self.values = {"1's":"empty" , "2's":"empty" , "3's":"empty" , "4's":"empty" , "5's": "empty" , "6's": "empty" , "3 of a kind" : "empty" , "4 of a kind" : "empty" , "low run" : "empty" , "high run" : "empty" , "sum" : "empty" , "yahtzee" : "empty"}
+        self.values = {"1's":"empty" , "2's":"empty" , "3's":"empty" , "4's":"empty" , "5's": "empty" , "6's": "empty" , "3 of a kind" : "empty" , "4 of a kind" : "empty" , "low run" : "empty" , "high run" : "empty" , "full house" : "empty", "sum" : "empty" , "yahtzee" : "empty"}
         
     def show_scorecard(self):    
         
@@ -175,7 +176,11 @@ class Scorecard(object):
                 three_of_a_kind += chosen_value
                 count += 1
         
-        self.values["3 of a kind"] = three_of_a_kind        
+        self.values["3 of a kind"] = three_of_a_kind
+
+    def no_three_of_a_kind(self):
+
+        self.values["3 of a kind"] = "x"        
 
     def four_of_kind(self, dices, chosen_value):
         count = 0
@@ -187,15 +192,35 @@ class Scorecard(object):
                 count += 1
         
         self.values["4 of a kind"] = four_of_a_kind  
+    
+    def no_four_of_a_kind(self):
+
+        self.values["4 of a kind"] = "x"
 
     def low_run(self, dices):
 
-        self.values["low run"] = 10
+        self.values["low run"] = 40
+
+    def no_low_run(self, dices):
+
+        self.values["low run"] = "x"
     
     def high_run(self, dices):
         
         self.values["high run"] = 40
 
+    def no_high_run(self, dices):
+        
+        self.values["high run"] = "x"
+
+    def no_full_house(self):
+
+        self.values["full house"] = "x"
+    
+    def full_house(self, dices):
+
+        self.values["full house"] = 30    
+    
     def sum_of(self,dices):
         
         total = 0
@@ -208,6 +233,21 @@ class Scorecard(object):
     def yahtzee(self,dices):
         
         self.values["yahtzee"] = 100
+
+    def noyahtzee(self, dices):
+
+        self.values["yahtzee"] = "x"
+
+    def total_score(self):
+
+        totalscore = 0
+
+        for key in self.values:
+            if self.values[key] == "x":
+                totalscore += 0
+            else: totalscore += int(self.values[key])
+         
+        print totalscore
 
 def game():
 
@@ -281,7 +321,16 @@ def game():
 
                 elif choice == "3 of a kind":
                     number = raw_input("Which number?")
-                    scorecard.three_of_kind(turn.dice_values, number)
+                    number = int(number)
+
+                    if turn.dice_values.count(number) < 3:
+                        print "You don't have 3 of that number"
+                        decision = raw_input("Do you still want to take 3 of a kind, [y/n]?")
+                        if decision == "n":
+                            continue
+                        else: scorecard.no_three_of_a_kind
+                        break
+                    else: scorecard.three_of_kind(turn.dice_values,number)
                     break
 
                 if choice == "4 of a kind" and scorecard.values["4 of a kind"] != 'empty':
@@ -290,8 +339,20 @@ def game():
 
                 elif choice == "4 of a kind":
                     number = raw_input("Which number?")
-                    scorecard.four_of_kind(turn.dice_values, number)
-                    break
+                    number = int(number)
+                    
+                    if turn.dice_values.count(number) < 4:
+                        print "You don't have 4 of that number"
+                        decision = raw_input("Do you still want to take 4 of a kind, [y/n]?")
+                        if decision == "n":
+                            continue
+                        else:
+                            scorecard.no_four_of_a_kind()
+                            break
+                    
+                    else:
+                        scorecard.four_of_kind(turn.dice_values, number)
+                        break
 
 
                 if choice == "low run" and scorecard.values["low run"] != 'empty':
@@ -302,12 +363,36 @@ def game():
                     scorecard.low_run(turn.dice_values)
                     break
 
+                if choice == "low run" and collections.Counter(turn.dice_values) == collections.Counter([1,2,4,5,3]):
+                    scorecard.low_run(turn.dice_values)
+                    break
+
+                elif choice == "low run" and collections.Counter(turn.dice_values) != collections.Counter([2,3,4,5,1]):
+                    scorecard.no_low_run(turn.dice_values)
+                    break
+
                 if choice == "high run" and scorecard.values["high run"] != 'empty':
                     print "You have already taken high run"
                     continue
 
-                elif choice == "high run":
+                if choice == "high run" and collections.Counter(turn.dice_values) == collections.Counter([2,3,4,5,6]):
                     scorecard.high_run(turn.dice_values)
+                    break
+
+                elif choice == "high run" and collections.Counter(turn.dice_values) != collections.Counter([2,3,4,5,6]):
+                    scorecard.no_high_run(turn.dice_values)
+                    break
+
+                if choice == "full house" and scorecard.values["full house"] != 'empty':
+                    print "You have already taken full house"
+                    continue
+
+                if choice == "full house":
+                    countvalues = collections.Counter(turn.dice_values)
+                    if countvalues.values() == [2,3] or countvalues.values() == [3,2] or countvalues.values() == [5]:
+                        scorecard.full_house(turn.dice_values)
+                        break
+                    else: scorecard.no_full_house()
                     break
 
                 if choice == "sum" and scorecard.values["sum"] != 'empty':
@@ -322,13 +407,19 @@ def game():
                     print "You have already taken yahtzee"
                     continue
 
-                elif choice == "yahtzee":
+                elif choice == "yahtzee" and collections.Counter(turn.dice_values) == collections.Counter([6,6,6,6,6]):
                     scorecard.yahtzee(turn.dice_values)
                     break
 
-            
+                elif choice == "yahtzee" and collections.Counter(turn.dice_values) != collections.Counter([6,6,6,6,6]):
+                    scorecard.noyahtzee(turn.dice_values)
+                    break
+
+     
+
         scorecard.show_scorecard()
 
+    print "End of Game. Your final score is %s" % scorecard.total_score()
     
 game()
 
